@@ -1,0 +1,15 @@
+=======================================================================================
+                    MDVRP Instances of Cordeau et al. (1997)
+=======================================================================================
+
+El origen de las instancias es: http://neumann.hec.ca/chairedistributique/data/
+
+Las instancias entregadas son las provenientes de: http://www.vrp-rep.org/references/item/christofides-and-eilon-1969.html
+
+Las soluciones entregadas (y actualizaciones) provienen de (MDVRP): https://www.bernabe.dorronsoro.es/vrp/
+
+El formato de las instancias es explicado en: https://neo.lcc.uma.es/vrp/vrp-instances/description-for-files-of-cordeaus-instances/
+
+Las instancias de tipo pr01 a pr10 son propuestas en "Cordeau, J.-F., Gendreau, M., & Laporte, G. (1997). A tabu search heuristic for periodic and multi-depot vehicle routing problems. Networks, 30(2), 105
+
+Es importante considerar que las soluciones han sido actualizadas 
