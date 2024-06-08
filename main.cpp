@@ -1,8 +1,6 @@
-#include <iostream>
+#include "functions.h"
 
-using namespace std;
-
-int main(){ 
-    cout << "hola mundo" << endl;
+int main() { 
+    solver("Instancias Conocidas/p01.txt");
     return 0;
-}
+};
