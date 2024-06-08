@@ -1,16 +1,19 @@
 #include "functions.h"
 
 vector<string> splitter(string str, char pattern) {
-    int posInt = 0;
-    int posFound = 0;
-    string splitted;
     vector<string> splitVector;
+    stringstream ss(str); // Usar stringstream para facilitar la separacion
+    string item;
 
-    while (posFound >= 0) {
-        posFound = str.find(pattern, posInt);
-        splitted = str.substr(posInt, posFound - posInt);
-        posInt = posFound + 1;
-        splitVector.push_back(splitted);
+    while (getline(ss, item, pattern)) {
+        // Eliminar espacios en blanco al principio y al final de cada elemento
+        item.erase(0, item.find_first_not_of(' ')); 
+        item.erase(item.find_last_not_of(' ') + 1);
+
+        // Agregar al vector solo si no esta vacio (evita agregar espacios vacios)
+        if (!item.empty()) {
+            splitVector.push_back(item);
+        }
     }
 
     return splitVector;
@@ -51,6 +54,41 @@ void solver(string fileName) {
                 depositos[i].duracionMaxima = stoi(splitVector[0]);
                 depositos[i].capacidadMaxima = stoi(splitVector[1]);
             }
+
+            vector<Cliente> clientes(N);
+
+            for (int i = 0; i < N; i++) {
+                getline(myFile, linea);
+                splitVector = splitter(linea, ' ');
+                
+                clientes[i].id = stoi(splitVector[0]);
+                clientes[i].x = stoi(splitVector[1]);
+                clientes[i].y = stoi(splitVector[2]);
+                clientes[i].tiempoServicio = stoi(splitVector[3]);
+                clientes[i].demanda = stoi(splitVector[4]);
+                clientes[i].frecuencia = stoi(splitVector[5]);
+                clientes[i].combinacionesVisita = stoi(splitVector[6]);
+                
+                for(int j = 7; j < splitVector.size(); j++) {
+                    int valor = stoi(splitVector[j]);
+                    clientes[i].ordenVisita.push_back(valor);
+                }
+            }
+
+            //cout << "Datos de los clientes:" << endl;
+            //for (const Cliente& cliente : clientes) {
+            //    cout << "ID: " << cliente.id 
+            //         << ", X: " << cliente.x
+            //         << ", Y: " << cliente.y
+            //         << ", Tiempo de Servicio: " << cliente.tiempoServicio
+            //         << ", Demanda: " << cliente.demanda
+            //         << ", Frecuencia: " << cliente.frecuencia
+            //         << ", Orden de Visita: ";
+            //    for (int orden : cliente.ordenVisita) {
+            //        cout << orden << " ";
+            //    }
+            //    cout << endl;
+            //}
 
         } catch (const invalid_argument& e) {
             cerr << "Error al convertir valores: " << e.what() << endl;
