@@ -14,8 +14,13 @@ struct Cliente {
     vector<int> ordenVisita;
 };
 
-struct Deposito {
+struct DepositoDQ {
     int duracionMaxima, capacidadMaxima;
+};
+
+struct Deposito {
+    int id, demanda, tiempoServicio, frecuencia, combinacionesVisita;
+    double x, y;
 };
 
 vector<string> splitter(string str, char pattern);

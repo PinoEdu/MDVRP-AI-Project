@@ -1,6 +1,6 @@
 #include "functions.h"
 
 int main() { 
-    solver("Instancias Conocidas/p01.txt");
+    solver("Instancias Conocidas/pr01.txt");
     return 0;
 };

@@ -40,7 +40,7 @@ void solver(string fileName) {
                 throw runtime_error("Tipo de problema incorrecto. Se espera MDVRP (tipo 2).");
             }
 
-            vector<Deposito> depositos(T);
+            vector<DepositoDQ> depositosDQ(T);
 
             for (int i = 0; i < T; i++) {
                 getline(myFile, linea);
@@ -51,8 +51,8 @@ void solver(string fileName) {
                     throw runtime_error("Formato de linea de deposito incorrecto.");
                 }
 
-                depositos[i].duracionMaxima = stoi(splitVector[0]);
-                depositos[i].capacidadMaxima = stoi(splitVector[1]);
+                depositosDQ[i].duracionMaxima = stoi(splitVector[0]);
+                depositosDQ[i].capacidadMaxima = stoi(splitVector[1]);
             }
 
             vector<Cliente> clientes(N);
@@ -62,8 +62,8 @@ void solver(string fileName) {
                 splitVector = splitter(linea, ' ');
                 
                 clientes[i].id = stoi(splitVector[0]);
-                clientes[i].x = stoi(splitVector[1]);
-                clientes[i].y = stoi(splitVector[2]);
+                clientes[i].x = stof(splitVector[1]);
+                clientes[i].y = stof(splitVector[2]);
                 clientes[i].tiempoServicio = stoi(splitVector[3]);
                 clientes[i].demanda = stoi(splitVector[4]);
                 clientes[i].frecuencia = stoi(splitVector[5]);
@@ -75,21 +75,21 @@ void solver(string fileName) {
                 }
             }
 
-            //cout << "Datos de los clientes:" << endl;
-            //for (const Cliente& cliente : clientes) {
-            //    cout << "ID: " << cliente.id 
-            //         << ", X: " << cliente.x
-            //         << ", Y: " << cliente.y
-            //         << ", Tiempo de Servicio: " << cliente.tiempoServicio
-            //         << ", Demanda: " << cliente.demanda
-            //         << ", Frecuencia: " << cliente.frecuencia
-            //         << ", Orden de Visita: ";
-            //    for (int orden : cliente.ordenVisita) {
-            //        cout << orden << " ";
-            //    }
-            //    cout << endl;
-            //}
+            vector<Deposito> depositos(T);
 
+            for (int i = 0; i < T; i++) {
+                getline(myFile, linea);
+                splitVector = splitter(linea, ' ');
+
+                depositos[i].id = stoi(splitVector[0]);
+                depositos[i].x = stof(splitVector[1]);
+                depositos[i].y = stof(splitVector[2]);
+                depositos[i].tiempoServicio = stoi(splitVector[3]);
+                depositos[i].demanda = stoi(splitVector[4]);
+                depositos[i].frecuencia = stoi(splitVector[5]);
+                depositos[i].combinacionesVisita = stoi(splitVector[6]);
+            }
+            
         } catch (const invalid_argument& e) {
             cerr << "Error al convertir valores: " << e.what() << endl;
         } catch (const out_of_range& e) {
