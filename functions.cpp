@@ -1,4 +1,12 @@
-#include "functions.h"
+#include <iostream>
+#include <vector>
+#include <fstream>
+#include <stdexcept>
+#include <sstream>
+#include <cmath>
+#include <ctime>
+
+using namespace std;
 
 const int MDVRP_TYPE = 2;
 
@@ -44,8 +52,42 @@ double calcularDistancia(double x1, double y1, double x2, double y2) {
     return sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
 }
 
-unsigned int generarSemillaAleatoria() {
-    return static_cast<unsigned int>(time(nullptr));
+void greedyMDVRP(vector<Deposito>& depositos, vector<Cliente>& clientes, int M) {
+    for (int i = 0; i < depositos.size(); i++) {
+        vector<vector<Cliente>> rutas(M); // Inicializar rutas para cada vehículo
+        double xDeposito = depositos[i].x;
+        double yDeposito = depositos[i].y;
+
+        for (int j = 0; j < clientes.size(); j++) {
+            double distanciaMinima = numeric_limits<double>::max();
+            int indiceMinimo = -1;
+
+            for (int k = 0; k < rutas.size(); k++) {
+                double distancia = calcularDistancia(xDeposito, yDeposito, clientes[j].x, clientes[j].y);
+                if (clientes[j].q <= depositos[i].Q) {
+                    if (distancia < distanciaMinima) {
+                        distanciaMinima = distancia;
+                        indiceMinimo = k;
+                    }
+                }
+            }
+
+            if (indiceMinimo != -1) {
+                rutas[indiceMinimo].push_back(clientes[j]);
+                depositos[i].Q -= clientes[j].q;
+            }
+        }
+
+        // Imprimir las rutas
+        cout << "Depósito " << depositos[i].id << ":" << endl;
+        for (int j = 0; j < rutas.size(); j++) {
+            cout << "Ruta " << j + 1 << ": ";
+            for (const auto& cliente : rutas[j]) {
+                cout << cliente.id << " ";
+            }
+            cout << endl;
+        }
+    }
 }
 
 
@@ -109,18 +151,7 @@ void solver(string fileName) {
             
             string fileNameAux = splitter(splitter(fileName, '/')[1], '.')[0];
 
-            //for (const auto& cliente : clientes) {
-            //    cout << cliente.id << " " << cliente.x << " " << cliente.y << " " << cliente.d << " " << cliente.q << " " << cliente.f << " " << cliente.a << " ";
-            //    for (const auto& val : cliente.list) {
-            //        std::cout << val << " ";
-            //    }
-            //    cout << std::endl;
-            //}
-
-            //for (const auto& cliente : depositos) {
-            //    cout << cliente.id << " " << cliente.x << " " << cliente.y << " " << cliente.d << " " << cliente.q << " " << cliente.f << " " << cliente.a << " " << cliente.D << " " << cliente.Q << endl;
-            //}
-
+            greedyMDVRP(depositos, clientes, M);
         } catch (const invalid_argument& e) {
             cerr << "Error al convertir valores: " << e.what() << endl;
         } catch (const out_of_range& e) {
@@ -134,3 +165,8 @@ void solver(string fileName) {
         cerr << "No se pudo abrir el archivo " << "'" + fileName + "'" << endl;
     }
 }
+
+int main() { 
+    solver("Instancias Conocidas/p01.txt");
+    return 0;
+};
