@@ -1,5 +1,9 @@
 # MDVRP-AI-Project
 
-    make: Compilar el código
+Compilar el código
 
-    make run: Compilar y ejecutar el código
+    make
+
+Compilar y ejecutar el código
+
+    make run
