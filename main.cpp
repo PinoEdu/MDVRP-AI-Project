@@ -23,6 +23,14 @@ struct Deposito {
     double x, y;
 };
 
+// Estructura para representar una ruta
+struct Ruta {
+    int depositoId;
+    vector<int> clientesVisitados;
+    int cargaActual = 0;
+    double distanciaRecorrida = 0;
+};
+
 vector<string> splitter(string str, char pattern) {
     vector<string> splitVector;
     stringstream ss(str); 
@@ -48,15 +56,7 @@ vector<string> splitter(string str, char pattern) {
     return splitVector;
 }
 
-// Estructura para representar una ruta
-struct Ruta {
-    int depositoId;
-    vector<int> clientesVisitados;
-    int cargaActual = 0;
-    double distanciaRecorrida = 0;
-};
-
-// Función para calcular la distancia euclidiana entre dos puntos
+// Funcion para calcular la distancia euclidiana entre dos puntos
 double calcularDistancia(double x1, double y1, double x2, double y2) {
     return sqrt(pow(x1 - x2, 2) + pow(y1 - y2, 2));
 }
@@ -76,10 +76,6 @@ void solver(string fileName) {
             int M = stoi(splitVector[1]);   // Numero de vehiculos por deposito
             int N = stoi(splitVector[2]);   // Numero de clientes
             int T = stoi(splitVector[3]);   // Numero de depositos
-
-            if (type != MDVRP_TYPE) {
-                throw runtime_error("Tipo de problema incorrecto. Se espera MDVRP (tipo 2).");
-            }
 
             vector<Deposito> depositos(T);
             vector<Cliente> clientes(N);
@@ -119,7 +115,7 @@ void solver(string fileName) {
                 depositos[i].numCombinacionesVisita = stoi(splitVector[6]);
             }
 
-            vector<Ruta> rutas(M * T); // Inicializa las rutas (M vehículos por T depósitos)
+            vector<Ruta> rutas(M * T); // Inicializa las rutas (M vehiculos por T depositos)
             for (int i = 0; i < M * T; ++i) {
                 rutas[i].depositoId = i / M + 1; 
             }
@@ -128,7 +124,7 @@ void solver(string fileName) {
 
             // Algoritmo Greedy
             for (Ruta& ruta : rutas) { // Referencia para modificar directamente la ruta
-                int depositoActual = ruta.depositoId - 1; // Índice del depósito (0-indexado)
+                int depositoActual = ruta.depositoId - 1; // Indice del deposito (0-indexado)
                 double xDeposito = depositos[depositoActual].x;
                 double yDeposito = depositos[depositoActual].y;
                 int clienteActual = -1; // Comienza en el deposito (sin cliente asignado)
@@ -143,7 +139,7 @@ void solver(string fileName) {
                             ruta.cargaActual + clientes[j].demanda <= depositos[depositoActual].capacidadMaxima) {
                             
                             double distancia;
-                            if (clienteActual == -1) { // Si es el primer cliente, calcular desde el depósito
+                            if (clienteActual == -1) { // Si es el primer cliente, calcular desde el deposito
                                 distancia = calcularDistancia(xDeposito, yDeposito, clientes[j].x, clientes[j].y);
                             } else { // Si no, calcular desde el cliente actual
                                 distancia = calcularDistancia(clientes[clienteActual].x, clientes[clienteActual].y, clientes[j].x, clientes[j].y);
@@ -158,7 +154,7 @@ void solver(string fileName) {
 
                     // Si no se encuentra un cliente valido, termina la ruta
                     if (clienteMasCercano == -1) {
-                        ruta.distanciaRecorrida += calcularDistancia(xDeposito, yDeposito, clientes[clienteActual].x, clientes[clienteActual].y); // Regreso al depósito
+                        ruta.distanciaRecorrida += calcularDistancia(xDeposito, yDeposito, clientes[clienteActual].x, clientes[clienteActual].y); // Regreso al deposito
                         break;
                     }
 
