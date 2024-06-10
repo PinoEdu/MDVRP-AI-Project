@@ -1,22 +1,51 @@
 #include "functions.h"
 
+const int MDVRP_TYPE = 2;
+
+// Estructura para representar un cliente
+struct Cliente {
+    int id, d, q, a, f;
+    double x, y;
+    vector<int> list;
+};
+
+// Estructura para representar un deposito
+struct Deposito {
+    int id, d, q, f, a, D, Q;
+    double x, y;
+};
+
 vector<string> splitter(string str, char pattern) {
     vector<string> splitVector;
-    stringstream ss(str); // Usar stringstream para facilitar la separacion
+    stringstream ss(str); 
     string item;
 
     while (getline(ss, item, pattern)) {
-        // Eliminar espacios en blanco al principio y al final de cada elemento
-        item.erase(0, item.find_first_not_of(' ')); 
+        item.erase(0, item.find_first_not_of(' '));
         item.erase(item.find_last_not_of(' ') + 1);
-
-        // Agregar al vector solo si no esta vacio (evita agregar espacios vacios)
         if (!item.empty()) {
             splitVector.push_back(item);
         }
     }
 
+    // Agregar el ultimo elemento si la cadena no termina en el patron
+    if (!ss.eof()) { 
+        item = ss.str().substr(ss.tellg());
+        item.erase(0, item.find_first_not_of(' '));
+        item.erase(item.find_last_not_of(' ') + 1);
+        if (!item.empty()) {
+            splitVector.push_back(item);
+        }
+    }
     return splitVector;
+}
+
+double calcularDistancia(double x1, double y1, double x2, double y2) {
+    return sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
+}
+
+unsigned int generarSemillaAleatoria() {
+    return static_cast<unsigned int>(time(nullptr));
 }
 
 
@@ -29,7 +58,7 @@ void solver(string fileName) {
     if (myFile.is_open()) { 
         try {
             getline(myFile, linea);
-            splitVector = splitter(linea, ' '); 
+            splitVector = splitter(linea, ' ');
 
             int type = stoi(splitVector[0]);
             int M = stoi(splitVector[1]);
@@ -40,56 +69,58 @@ void solver(string fileName) {
                 throw runtime_error("Tipo de problema incorrecto. Se espera MDVRP (tipo 2).");
             }
 
-            vector<DepositoDQ> depositosDQ(T);
+            vector<Deposito> depositos(T);
+            vector<Cliente> clientes(N);
 
             for (int i = 0; i < T; i++) {
                 getline(myFile, linea);
                 splitVector = splitter(linea, ' ');
-                
-                // Verificar que hay suficientes valores en la linea
-                if (splitVector.size() < 2) {
-                    throw runtime_error("Formato de linea de deposito incorrecto.");
-                }
-
-                depositosDQ[i].duracionMaxima = stoi(splitVector[0]);
-                depositosDQ[i].capacidadMaxima = stoi(splitVector[1]);
+                depositos[i].D = stoi(splitVector[0]);
+                depositos[i].Q = stoi(splitVector[1]);
             }
-
-            vector<Cliente> clientes(N);
 
             for (int i = 0; i < N; i++) {
                 getline(myFile, linea);
                 splitVector = splitter(linea, ' ');
-                
                 clientes[i].id = stoi(splitVector[0]);
                 clientes[i].x = stof(splitVector[1]);
                 clientes[i].y = stof(splitVector[2]);
-                clientes[i].tiempoServicio = stoi(splitVector[3]);
-                clientes[i].demanda = stoi(splitVector[4]);
-                clientes[i].frecuencia = stoi(splitVector[5]);
-                clientes[i].combinacionesVisita = stoi(splitVector[6]);
-                
+                clientes[i].d = stoi(splitVector[3]);
+                clientes[i].q = stoi(splitVector[4]);
+                clientes[i].f = stoi(splitVector[5]);
+                clientes[i].a = stoi(splitVector[6]);
                 for(int j = 7; j < splitVector.size(); j++) {
                     int valor = stoi(splitVector[j]);
-                    clientes[i].ordenVisita.push_back(valor);
+                    clientes[i].list.push_back(valor);
                 }
             }
-
-            vector<Deposito> depositos(T);
 
             for (int i = 0; i < T; i++) {
                 getline(myFile, linea);
                 splitVector = splitter(linea, ' ');
-
                 depositos[i].id = stoi(splitVector[0]);
                 depositos[i].x = stof(splitVector[1]);
                 depositos[i].y = stof(splitVector[2]);
-                depositos[i].tiempoServicio = stoi(splitVector[3]);
-                depositos[i].demanda = stoi(splitVector[4]);
-                depositos[i].frecuencia = stoi(splitVector[5]);
-                depositos[i].combinacionesVisita = stoi(splitVector[6]);
+                depositos[i].d = stoi(splitVector[3]);
+                depositos[i].q = stoi(splitVector[4]);
+                depositos[i].f = stoi(splitVector[5]);
+                depositos[i].a = stoi(splitVector[6]);
             }
             
+            string fileNameAux = splitter(splitter(fileName, '/')[1], '.')[0];
+
+            //for (const auto& cliente : clientes) {
+            //    cout << cliente.id << " " << cliente.x << " " << cliente.y << " " << cliente.d << " " << cliente.q << " " << cliente.f << " " << cliente.a << " ";
+            //    for (const auto& val : cliente.list) {
+            //        std::cout << val << " ";
+            //    }
+            //    cout << std::endl;
+            //}
+
+            //for (const auto& cliente : depositos) {
+            //    cout << cliente.id << " " << cliente.x << " " << cliente.y << " " << cliente.d << " " << cliente.q << " " << cliente.f << " " << cliente.a << " " << cliente.D << " " << cliente.Q << endl;
+            //}
+
         } catch (const invalid_argument& e) {
             cerr << "Error al convertir valores: " << e.what() << endl;
         } catch (const out_of_range& e) {

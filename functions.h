@@ -3,26 +3,15 @@
 #include <fstream>
 #include <stdexcept>
 #include <sstream>
+#include <cmath>
+#include <ctime>
 
 using namespace std;
 
-const int MDVRP_TYPE = 2;
-
-struct Cliente {
-    int id, demanda, tiempoServicio, frecuencia, combinacionesVisita;
-    double x, y; 
-    vector<int> ordenVisita;
-};
-
-struct DepositoDQ {
-    int duracionMaxima, capacidadMaxima;
-};
-
-struct Deposito {
-    int id, demanda, tiempoServicio, frecuencia, combinacionesVisita;
-    double x, y;
-};
-
 vector<string> splitter(string str, char pattern);
+
+double calcularDistancia(double x1, double y1, double x2, double y2);
+
+unsigned int generarSemillaAleatoria();
 
 void solver(string fileName);
