@@ -61,6 +61,65 @@ double calcularDistancia(double x1, double y1, double x2, double y2) {
     return sqrt(pow(x1 - x2, 2) + pow(y1 - y2, 2));
 }
 
+vector<Ruta> Greedy(int M, int N, int T, vector<Deposito> depositos, vector<Cliente> clientes) {
+    vector<Ruta> rutas(M * T);
+    for (int i = 0; i < M * T; ++i) {
+        rutas[i].depositoId = i / M + 1;
+    }
+
+    vector<bool> clienteVisitado(N, false);
+
+    for (Ruta& ruta : rutas) {
+        int depositoActual = ruta.depositoId - 1;
+        double xDeposito = depositos[depositoActual].x;
+        double yDeposito = depositos[depositoActual].y;
+        int clienteActual = -1;
+
+        while (true) {
+            int clienteMasCercano = -1;
+            double distanciaMinima = numeric_limits<double>::max();
+
+            for (int j = 0; j < N; ++j) {
+                // Verificar si el cliente cumple con todas las restricciones
+                if (!clienteVisitado[j] &&
+                    find(clientes[j].depositosVisitantes.begin(), clientes[j].depositosVisitantes.end(), depositoActual + 1) != clientes[j].depositosVisitantes.end() &&
+                    ruta.cargaActual + clientes[j].demanda <= depositos[depositoActual].capacidadMaxima) {
+
+                    double distancia;
+                    if (clienteActual == -1) {
+                        distancia = calcularDistancia(xDeposito, yDeposito, clientes[j].x, clientes[j].y);
+                    } else {
+                        distancia = calcularDistancia(clientes[clienteActual].x, clientes[clienteActual].y, clientes[j].x, clientes[j].y);
+                    }
+
+                    // Verificar si la distancia acumulada no supera la distancia máxima del depósito
+                    if (distancia + ruta.distanciaRecorrida <= depositos[depositoActual].distanciaMaxima || depositos[depositoActual].distanciaMaxima == 0) {
+                        if (distancia < distanciaMinima) {
+                            distanciaMinima = distancia;
+                            clienteMasCercano = j;
+                        }
+                    }
+                }
+            }
+
+            if (clienteMasCercano == -1) {
+                if (clienteActual != -1) { // Solo agregar distancia de vuelta si se visitó algún cliente
+                    ruta.distanciaRecorrida += calcularDistancia(xDeposito, yDeposito, clientes[clienteActual].x, clientes[clienteActual].y);
+                }
+                break;
+            }
+
+            clienteVisitado[clienteMasCercano] = true;
+            ruta.clientesVisitados.push_back(clienteMasCercano + 1);
+            ruta.cargaActual += clientes[clienteMasCercano].demanda;
+            ruta.distanciaRecorrida += distanciaMinima;
+            clienteActual = clienteMasCercano;
+        }
+    }
+    return rutas;
+}
+
+
 void solver(string fileName) {
     ifstream myFile(fileName);
 
@@ -115,57 +174,8 @@ void solver(string fileName) {
                 depositos[i].numCombinacionesVisita = stoi(splitVector[6]);
             }
 
-            vector<Ruta> rutas(M * T); // Inicializa las rutas (M vehiculos por T depositos)
-            for (int i = 0; i < M * T; ++i) {
-                rutas[i].depositoId = i / M + 1; 
-            }
-
-            vector<bool> clienteVisitado(N, false); 
-
-            // Algoritmo Greedy
-            for (Ruta& ruta : rutas) { // Referencia para modificar directamente la ruta
-                int depositoActual = ruta.depositoId - 1; // Indice del deposito (0-indexado)
-                double xDeposito = depositos[depositoActual].x;
-                double yDeposito = depositos[depositoActual].y;
-                int clienteActual = -1; // Comienza en el deposito (sin cliente asignado)
-
-                while (true) {
-                    // Encuentra el cliente mas cercano no visitado que pueda ser atendido
-                    int clienteMasCercano = -1;
-                    double distanciaMinima = numeric_limits<double>::max();
-                    for (int j = 0; j < N; ++j) {
-                        if (!clienteVisitado[j] && 
-                            find(clientes[j].depositosVisitantes.begin(), clientes[j].depositosVisitantes.end(), depositoActual + 1) != clientes[j].depositosVisitantes.end() &&
-                            ruta.cargaActual + clientes[j].demanda <= depositos[depositoActual].capacidadMaxima) {
-                            
-                            double distancia;
-                            if (clienteActual == -1) { // Si es el primer cliente, calcular desde el deposito
-                                distancia = calcularDistancia(xDeposito, yDeposito, clientes[j].x, clientes[j].y);
-                            } else { // Si no, calcular desde el cliente actual
-                                distancia = calcularDistancia(clientes[clienteActual].x, clientes[clienteActual].y, clientes[j].x, clientes[j].y);
-                            }
-
-                            if (distancia < distanciaMinima) {
-                                distanciaMinima = distancia;
-                                clienteMasCercano = j;
-                            }
-                        }
-                    }
-
-                    // Si no se encuentra un cliente valido, termina la ruta
-                    if (clienteMasCercano == -1) {
-                        ruta.distanciaRecorrida += calcularDistancia(xDeposito, yDeposito, clientes[clienteActual].x, clientes[clienteActual].y); // Regreso al deposito
-                        break;
-                    }
-
-                    // Asigna el cliente a la ruta
-                    clienteVisitado[clienteMasCercano] = true;
-                    ruta.clientesVisitados.push_back(clienteMasCercano + 1); // +1 para indices 1-indexados
-                    ruta.cargaActual += clientes[clienteMasCercano].demanda;
-                    ruta.distanciaRecorrida += distanciaMinima;
-                    clienteActual = clienteMasCercano;
-                }
-            }
+            vector<Ruta> rutas(M * T);
+            rutas = Greedy(M, N, T, depositos, clientes);
 
             string fileNameAux = splitter(splitter(fileName, '/')[1], '.')[0];
 
