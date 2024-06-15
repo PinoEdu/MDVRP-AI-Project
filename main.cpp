@@ -9,6 +9,7 @@
 using namespace std;
 
 const int MDVRP_TYPE = 2;
+const string NOMBRE_ARCHIVO = "Instancias Conocidas/p01.txt";
 
 // Estructura para representar un cliente
 struct Cliente {
@@ -30,6 +31,35 @@ struct Ruta {
     int cargaActual = 0;
     double distanciaRecorrida = 0;
 };
+
+// Estructura para representar todas las componentes
+struct Element {
+    vector<Deposito> depositos;
+    vector<Cliente> clientes;
+    int type, M, N, T;
+    string fileName;
+};
+
+// Función para imprimir resultados
+void imprimirResultados(const vector<Ruta>& rutas, const Element& elements) {
+    double distanciaTotal = 0;
+    cout << "Rutas generadas por el algoritmo Greedy:" << endl;
+
+    for (int i = 0; i < elements.M * elements.T; ++i) {
+        cout << "Ruta del vehículo " << (i % elements.M) + 1 << " del depósito " << rutas[i].depositoId << ":" << endl;
+        cout << "   Clientes visitados: ";
+        for (int cliente : rutas[i].clientesVisitados) {
+            cout << cliente << " ";
+        }
+        cout << endl;
+        cout << "   Carga actual: " << rutas[i].cargaActual << endl;
+        cout << "   Distancia recorrida: " << rutas[i].distanciaRecorrida << endl;
+        distanciaTotal += rutas[i].distanciaRecorrida;
+        cout << endl; // Separar las rutas con una línea en blanco
+    }
+    cout << "Distancia total recorrida: " << distanciaTotal << endl;
+}
+
 
 vector<string> splitter(string str, char pattern) {
     vector<string> splitVector;
@@ -61,7 +91,7 @@ double calcularDistancia(double x1, double y1, double x2, double y2) {
     return sqrt(pow(x1 - x2, 2) + pow(y1 - y2, 2));
 }
 
-vector<Ruta> Greedy(int M, int N, int T, vector<Deposito> depositos, vector<Cliente> clientes) {
+vector<Ruta> Greedy(int M, int N, int T, const vector<Deposito>& depositos, const vector<Cliente>& clientes) {
     vector<Ruta> rutas(M * T);
     for (int i = 0; i < M * T; ++i) {
         rutas[i].depositoId = i / M + 1;
@@ -92,7 +122,7 @@ vector<Ruta> Greedy(int M, int N, int T, vector<Deposito> depositos, vector<Clie
                         distancia = calcularDistancia(clientes[clienteActual].x, clientes[clienteActual].y, clientes[j].x, clientes[j].y);
                     }
 
-                    // Verificar si la distancia acumulada no supera la distancia máxima del depósito
+                    // Verificar si la distancia acumulada no supera la distancia maxima del deposito
                     if (distancia + ruta.distanciaRecorrida <= depositos[depositoActual].distanciaMaxima || depositos[depositoActual].distanciaMaxima == 0) {
                         if (distancia < distanciaMinima) {
                             distanciaMinima = distancia;
@@ -103,7 +133,7 @@ vector<Ruta> Greedy(int M, int N, int T, vector<Deposito> depositos, vector<Clie
             }
 
             if (clienteMasCercano == -1) {
-                if (clienteActual != -1) { // Solo agregar distancia de vuelta si se visitó algún cliente
+                if (clienteActual != -1) { // Solo agregar distancia de vuelta si se visito algun cliente
                     ruta.distanciaRecorrida += calcularDistancia(xDeposito, yDeposito, clientes[clienteActual].x, clientes[clienteActual].y);
                 }
                 break;
@@ -120,7 +150,7 @@ vector<Ruta> Greedy(int M, int N, int T, vector<Deposito> depositos, vector<Clie
 }
 
 
-void solver(string fileName) {
+Element extractor(string fileName) {
     ifstream myFile(fileName);
 
     string linea;
@@ -174,29 +204,19 @@ void solver(string fileName) {
                 depositos[i].numCombinacionesVisita = stoi(splitVector[6]);
             }
 
-            vector<Ruta> rutas(M * T);
-            rutas = Greedy(M, N, T, depositos, clientes);
+            Element aux;
 
-            string fileNameAux = splitter(splitter(fileName, '/')[1], '.')[0];
+            aux.clientes = clientes;
+            aux.depositos = depositos;
+            aux.fileName = splitter(splitter(fileName, '/')[1], '.')[0];
+            aux.type = type;
+            aux.M = M;
+            aux.N = N;
+            aux.T = T;
 
-            // Imprimir rutas y calcular distancia total
-            double distanciaTotal = 0;
-                cout << "Rutas generadas por el algoritmo Greedy:" << endl;
-
-            for (int i = 0; i < M * T; ++i) {
-                cout << "Ruta del vehículo " << (i % M) + 1 << " del depósito " << rutas[i].depositoId << ":" << endl;
-                cout << "   Clientes visitados: ";
-                for (int cliente : rutas[i].clientesVisitados) {
-                    cout << cliente << " ";
-                }
-                cout << endl;
-                cout << "   Carga actual: " << rutas[i].cargaActual << endl;
-                cout << "   Distancia recorrida: " << rutas[i].distanciaRecorrida << endl;
-                distanciaTotal += rutas[i].distanciaRecorrida;
-                cout << endl; // Separar las rutas con una línea en blanco
-            }
-            cout << "Distancia total recorrida: " << distanciaTotal << endl;    
-
+            return aux;
+        } catch (const ifstream::failure& e) {
+            cerr << "Error al abrir o leer el archivo: " << e.what() << endl;
         } catch (const invalid_argument& e) {
             cerr << "Error al convertir valores: " << e.what() << endl;
         } catch (const out_of_range& e) {
@@ -208,9 +228,17 @@ void solver(string fileName) {
     } else {
         cerr << "No se pudo abrir el archivo " << "'" + fileName + "'" << endl;
     }
+    Element aux;
+    return aux;
 }
 
 int main() { 
-    solver("Instancias Conocidas/p04.txt");
+    Element elements;
+    elements = extractor(NOMBRE_ARCHIVO);
+
+    vector<Ruta> rutas(elements.M * elements.T);
+    rutas = Greedy(elements.M, elements.N, elements.T, elements.depositos, elements.clientes);
+
+    imprimirResultados(rutas, elements);
     return 0;
 };
