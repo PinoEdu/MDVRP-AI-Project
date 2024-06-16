@@ -9,7 +9,7 @@
 using namespace std;
 
 const int MDVRP_TYPE = 2;
-const string NOMBRE_ARCHIVO = "Instancias Conocidas/p01.txt";
+const string NOMBRE_ARCHIVO = "Instancias Conocidas/pr01.txt";
 
 // Estructura para representar un cliente
 struct Cliente {
@@ -39,6 +39,38 @@ struct Element {
     int type, M, N, T;
     string fileName;
 };
+
+// Funcion para crear el archivo de salida
+void guardarResultados(const vector<Ruta>& rutas, const Element& elements) {
+    ofstream outputFile(elements.fileName + ".out");
+    if(outputFile.is_open()) {
+        double distanciaTotal = 0;
+        for (const Ruta& ruta : rutas) {
+            distanciaTotal += ruta.distanciaRecorrida;
+        }
+
+        outputFile << floor(distanciaTotal * 100) / 100 << endl;    // Trunco a dos decimales
+
+        for(int i = 0; i < elements.M * elements.T; ++i) {
+            // Solo escribir rutas con clientes
+            if (!rutas[i].clientesVisitados.empty()) {
+                outputFile << rutas[i].depositoId << " ";
+                outputFile << (i % elements.M) + 1 << " ";
+                outputFile << floor(rutas[i].distanciaRecorrida * 100) / 100 << " "; // Trunco a dos decimales
+                outputFile << rutas[i].cargaActual << " ";
+                outputFile << "0" << " ";       // Agregar el deposito de comienzo
+                for (int cliente : rutas[i].clientesVisitados) {
+                    outputFile << cliente << " ";
+                }
+                outputFile << "0" << endl;      // Agregar el deposito de llegada
+            }
+        }
+
+        outputFile.close();
+    } else {
+        cerr << "No se pudo crear el archivo de salida." << endl;
+    }
+}
 
 // Función para imprimir resultados
 void imprimirResultados(const vector<Ruta>& rutas, const Element& elements) {
@@ -240,5 +272,6 @@ int main() {
     rutas = Greedy(elements.M, elements.N, elements.T, elements.depositos, elements.clientes);
 
     imprimirResultados(rutas, elements);
+    guardarResultados(rutas, elements);
     return 0;
 };
