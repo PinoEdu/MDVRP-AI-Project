@@ -9,8 +9,8 @@
 
 using namespace std;
 
-const string NOMBRE_ARCHIVO = "Instancias Conocidas/p04.txt";
-int semilla = 12345;
+const string FILE_NAME = "Instancias Conocidas/p04.txt";
+int SEED = 12345;
 
 // Estructura para representar un cliente
 struct Cliente {
@@ -41,9 +41,48 @@ struct Element {
     string fileName;
 };
 
+// Función para imprimir resultados
+void printResults(const vector<Ruta>& rutas, const Element& elements) {
+    double distanciaTotal = 0;
+    cout << "Rutas generadas por el algoritmo Greedy:" << endl;
+
+    for (int i = 0; i < elements.M * elements.T; ++i) {
+        cout << "Ruta del vehículo " << (i % elements.M) + 1 << " del depósito " << rutas[i].depositoId << ":" << endl;
+        cout << "   Clientes visitados(" + to_string(rutas[i].clientesVisitados.size()) + "): ";
+        for (int cliente : rutas[i].clientesVisitados) {
+            cout << cliente << " ";
+        }
+        cout << endl;
+        cout << "   Carga actual: " << rutas[i].cargaActual << endl;
+        cout << "   Distancia recorrida: " << rutas[i].distanciaRecorrida << endl;
+        distanciaTotal += rutas[i].distanciaRecorrida;
+        cout << endl; // Separar las rutas con una línea en blanco
+    }
+    cout << "Distancia total recorrida: " << distanciaTotal << endl;
+}
+
+// Función para imprimir clientes
+void printClients(const vector<Cliente>& clientes) {
+    cout << "Clientes:" << endl;
+    for (const Cliente& cliente : clientes) {
+        cout << cliente.id << " ";
+        cout << cliente.x << " ";
+        cout << cliente.y << " ";
+        cout << cliente.tiempoServicio << " ";
+        cout << cliente.demanda << " ";
+        cout << cliente.frecuenciaVisita << " ";
+        cout << cliente.numCombinacionesVisita << " ";
+        for (int deposito : cliente.depositosVisitantes) {
+            cout << deposito << " ";
+        }
+        cout << endl;
+    }
+    cout << endl;
+}
+
 // Funcion para crear el archivo de salida
-void guardarResultados(const vector<Ruta>& rutas, const Element& elements) {
-    ofstream outputFile(elements.fileName + "_" + to_string(semilla) +".out");
+void saveResults(const vector<Ruta>& rutas, const Element& elements) {
+    ofstream outputFile(elements.fileName + "_" + to_string(SEED) +".out");
     if(outputFile.is_open()) {
         double distanciaTotal = 0;
         for (const Ruta& ruta : rutas) {
@@ -73,43 +112,12 @@ void guardarResultados(const vector<Ruta>& rutas, const Element& elements) {
     }
 }
 
-// Función para imprimir resultados
-void imprimirResultados(const vector<Ruta>& rutas, const Element& elements) {
-    double distanciaTotal = 0;
-    cout << "Rutas generadas por el algoritmo Greedy:" << endl;
-
-    for (int i = 0; i < elements.M * elements.T; ++i) {
-        cout << "Ruta del vehículo " << (i % elements.M) + 1 << " del depósito " << rutas[i].depositoId << ":" << endl;
-        cout << "   Clientes visitados: ";
-        for (int cliente : rutas[i].clientesVisitados) {
-            cout << cliente << " ";
-        }
-        cout << endl;
-        cout << "   Carga actual: " << rutas[i].cargaActual << endl;
-        cout << "   Distancia recorrida: " << rutas[i].distanciaRecorrida << endl;
-        distanciaTotal += rutas[i].distanciaRecorrida;
-        cout << endl; // Separar las rutas con una línea en blanco
+int getSizeTL(const vector<Ruta>& rutas) {
+    float largo = 0.0;
+    for(const Ruta& ruta: rutas) {
+        largo += ruta.clientesVisitados.size();
     }
-    cout << "Distancia total recorrida: " << distanciaTotal << endl;
-}
-
-// Función para imprimir clientes
-void imprimirClientes(const vector<Cliente>& clientes) {
-    cout << "Clientes:" << endl;
-    for (const Cliente& cliente : clientes) {
-        cout << cliente.id << " ";
-        cout << cliente.x << " ";
-        cout << cliente.y << " ";
-        cout << cliente.tiempoServicio << " ";
-        cout << cliente.demanda << " ";
-        cout << cliente.frecuenciaVisita << " ";
-        cout << cliente.numCombinacionesVisita << " ";
-        for (int deposito : cliente.depositosVisitantes) {
-            cout << deposito << " ";
-        }
-        cout << endl;
-    }
-    cout << endl;
+    return int(largo/rutas.size());
 }
 
 vector<Cliente> swapClientes(const vector<Cliente>& clientes, mt19937& gen) {
@@ -133,7 +141,7 @@ vector<Cliente> swapClientes(const vector<Cliente>& clientes, mt19937& gen) {
     swap(clientesCopia[cliente1Index].numCombinacionesVisita, clientesCopia[cliente2Index].numCombinacionesVisita);
     swap(clientesCopia[cliente1Index].depositosVisitantes, clientesCopia[cliente2Index].depositosVisitantes);
 
-    cout << "Se hizo swap del cliente " << cliente1Index << " con el cliente " << cliente2Index << endl;
+    //cout << "Se hizo swap del cliente " << cliente1Index << " con el cliente " << cliente2Index << endl;
     return clientesCopia;
 }
 
@@ -227,7 +235,7 @@ vector<Ruta> Greedy(int M, int N, int T, const vector<Deposito>& depositos, cons
 }
 
 
-Element extractor(string fileName) {
+Element decompressor(string fileName) {
     ifstream myFile(fileName);
 
     string linea;
@@ -281,17 +289,17 @@ Element extractor(string fileName) {
                 depositos[i].numCombinacionesVisita = stoi(splitVector[6]);
             }
 
-            Element aux;
+            Element elements;
 
-            aux.clientes = clientes;
-            aux.depositos = depositos;
-            aux.fileName = splitter(splitter(fileName, '/')[1], '.')[0];
-            aux.type = type;
-            aux.M = M;
-            aux.N = N;
-            aux.T = T;
+            elements.clientes = clientes;
+            elements.depositos = depositos;
+            elements.fileName = splitter(splitter(fileName, '/')[1], '.')[0];
+            elements.type = type;
+            elements.M = M;
+            elements.N = N;
+            elements.T = T;
 
-            return aux;
+            return elements;
         } catch (const ifstream::failure& e) {
             cerr << "Error al abrir o leer el archivo: " << e.what() << endl;
         } catch (const invalid_argument& e) {
@@ -305,15 +313,15 @@ Element extractor(string fileName) {
     } else {
         cerr << "No se pudo abrir el archivo " << "'" + fileName + "'" << endl;
     }
-    Element aux;
-    return aux;
+    Element elements;
+    return elements;
 }
 
 int main() { 
-    mt19937 gen(semilla);
+    mt19937 gen(SEED);
 
     Element elements;
-    elements = extractor(NOMBRE_ARCHIVO);
+    elements = decompressor(FILE_NAME);
 
     int numSwaps = elements.clientes.size()/2;
     for(int i = 0; i < numSwaps; i++) {
@@ -323,7 +331,10 @@ int main() {
     vector<Ruta> rutas(elements.M * elements.T);
     rutas = Greedy(elements.M, elements.N, elements.T, elements.depositos, elements.clientes);
 
-    //imprimirResultados(rutas, elements);
-    //guardarResultados(rutas, elements);
+    int tabuListSize = getSizeTL(rutas);
+    cout << "Largo lista tabu: " << tabuListSize << endl;
+
+    //printResults(rutas, elements);
+    //saveResults(rutas, elements);
     return 0;
 };
