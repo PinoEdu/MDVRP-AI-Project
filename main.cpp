@@ -5,11 +5,12 @@
 #include <sstream>
 #include <cmath>
 #include <algorithm>
+#include <random>
 
 using namespace std;
 
-const int MDVRP_TYPE = 2;
-const string NOMBRE_ARCHIVO = "Instancias Conocidas/pr01.txt";
+const string NOMBRE_ARCHIVO = "Instancias Conocidas/p04.txt";
+int semilla = 12345;
 
 // Estructura para representar un cliente
 struct Cliente {
@@ -42,7 +43,7 @@ struct Element {
 
 // Funcion para crear el archivo de salida
 void guardarResultados(const vector<Ruta>& rutas, const Element& elements) {
-    ofstream outputFile(elements.fileName + ".out");
+    ofstream outputFile(elements.fileName + "_" + to_string(semilla) +".out");
     if(outputFile.is_open()) {
         double distanciaTotal = 0;
         for (const Ruta& ruta : rutas) {
@@ -92,6 +93,49 @@ void imprimirResultados(const vector<Ruta>& rutas, const Element& elements) {
     cout << "Distancia total recorrida: " << distanciaTotal << endl;
 }
 
+// Función para imprimir clientes
+void imprimirClientes(const vector<Cliente>& clientes) {
+    cout << "Clientes:" << endl;
+    for (const Cliente& cliente : clientes) {
+        cout << cliente.id << " ";
+        cout << cliente.x << " ";
+        cout << cliente.y << " ";
+        cout << cliente.tiempoServicio << " ";
+        cout << cliente.demanda << " ";
+        cout << cliente.frecuenciaVisita << " ";
+        cout << cliente.numCombinacionesVisita << " ";
+        for (int deposito : cliente.depositosVisitantes) {
+            cout << deposito << " ";
+        }
+        cout << endl;
+    }
+    cout << endl;
+}
+
+vector<Cliente> swapClientes(const vector<Cliente>& clientes, mt19937& gen) {
+    vector<Cliente> clientesCopia = clientes; 
+
+    uniform_int_distribution<> distCliente(0, clientesCopia.size() - 1);
+    int cliente1Index = distCliente(gen);
+    int cliente2Index = distCliente(gen);
+
+    // Asegurar que los indices sean diferentes
+    while (cliente1Index == cliente2Index) {
+        cliente2Index = distCliente(gen);
+    }
+
+    // Se realiza el swap de todos los elementos del struct, menos del ID
+    swap(clientesCopia[cliente1Index].x, clientesCopia[cliente2Index].x);
+    swap(clientesCopia[cliente1Index].y, clientesCopia[cliente2Index].y);
+    swap(clientesCopia[cliente1Index].tiempoServicio, clientesCopia[cliente2Index].tiempoServicio);
+    swap(clientesCopia[cliente1Index].demanda, clientesCopia[cliente2Index].demanda);
+    swap(clientesCopia[cliente1Index].frecuenciaVisita, clientesCopia[cliente2Index].frecuenciaVisita);
+    swap(clientesCopia[cliente1Index].numCombinacionesVisita, clientesCopia[cliente2Index].numCombinacionesVisita);
+    swap(clientesCopia[cliente1Index].depositosVisitantes, clientesCopia[cliente2Index].depositosVisitantes);
+
+    cout << "Se hizo swap del cliente " << cliente1Index << " con el cliente " << cliente2Index << endl;
+    return clientesCopia;
+}
 
 vector<string> splitter(string str, char pattern) {
     vector<string> splitVector;
@@ -123,6 +167,7 @@ double calcularDistancia(double x1, double y1, double x2, double y2) {
     return sqrt(pow(x1 - x2, 2) + pow(y1 - y2, 2));
 }
 
+// Funcion que aplica el algoritmo Greedy al problema
 vector<Ruta> Greedy(int M, int N, int T, const vector<Deposito>& depositos, const vector<Cliente>& clientes) {
     vector<Ruta> rutas(M * T);
     for (int i = 0; i < M * T; ++i) {
@@ -265,13 +310,20 @@ Element extractor(string fileName) {
 }
 
 int main() { 
+    mt19937 gen(semilla);
+
     Element elements;
     elements = extractor(NOMBRE_ARCHIVO);
+
+    int numSwaps = elements.clientes.size()/2;
+    for(int i = 0; i < numSwaps; i++) {
+        elements.clientes = swapClientes(elements.clientes, gen);
+    }
 
     vector<Ruta> rutas(elements.M * elements.T);
     rutas = Greedy(elements.M, elements.N, elements.T, elements.depositos, elements.clientes);
 
-    imprimirResultados(rutas, elements);
-    guardarResultados(rutas, elements);
+    //imprimirResultados(rutas, elements);
+    //guardarResultados(rutas, elements);
     return 0;
 };
