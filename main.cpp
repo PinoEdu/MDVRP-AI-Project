@@ -6,11 +6,12 @@
 #include <cmath>
 #include <algorithm>
 #include <random>
+#include <unordered_set>
 
 using namespace std;
 
 const string FILE_NAME = "Instancias Conocidas/p04.txt";
-int SEED = 12345;
+const int SEED = 12345;
 
 // Estructura para representar un cliente
 struct Cliente {
@@ -44,7 +45,7 @@ struct Element {
 // Función para imprimir resultados
 void printResults(const vector<Ruta>& rutas, const Element& elements) {
     double distanciaTotal = 0;
-    cout << "Rutas generadas por el algoritmo Greedy:" << endl;
+    cout << "Rutas generadas:" << endl;
 
     for (int i = 0; i < elements.M * elements.T; ++i) {
         cout << "Ruta del vehículo " << (i % elements.M) + 1 << " del depósito " << rutas[i].depositoId << ":" << endl;
@@ -120,7 +121,7 @@ int getSizeTL(const vector<Ruta>& rutas) {
     return int(largo/rutas.size());
 }
 
-vector<Cliente> swapClientes(const vector<Cliente>& clientes, mt19937& gen) {
+vector<Cliente> clientsSwap(const vector<Cliente>& clientes, mt19937& gen) {
     vector<Cliente> clientesCopia = clientes; 
 
     uniform_int_distribution<> distCliente(0, clientesCopia.size() - 1);
@@ -176,7 +177,7 @@ double calcularDistancia(double x1, double y1, double x2, double y2) {
 }
 
 // Funcion que aplica el algoritmo Greedy al problema
-vector<Ruta> Greedy(int M, int N, int T, const vector<Deposito>& depositos, const vector<Cliente>& clientes) {
+vector<Ruta> greedy(int M, int N, int T, const vector<Deposito>& depositos, const vector<Cliente>& clientes) {
     vector<Ruta> rutas(M * T);
     for (int i = 0; i < M * T; ++i) {
         rutas[i].depositoId = i / M + 1;
@@ -232,6 +233,140 @@ vector<Ruta> Greedy(int M, int N, int T, const vector<Deposito>& depositos, cons
         }
     }
     return rutas;
+}
+
+// Función para realizar el movimiento Swap (intercambio de clientes entre rutas diferentes)
+bool realizarSwap(vector<Ruta>& rutas, vector<Cliente>& clientes, const vector<Deposito>& depositos, mt19937& gen, unordered_set<string>& tabuList) {
+    uniform_int_distribution<> distRuta(0, rutas.size() - 1);
+    int ruta1Index, ruta2Index;
+
+    // Elegir dos rutas aleatoriamente, asegurándose de que no sean la misma y que tengan clientes
+    do {
+        ruta1Index = distRuta(gen);
+        ruta2Index = distRuta(gen);
+    } while (ruta1Index == ruta2Index || rutas[ruta1Index].clientesVisitados.empty() || rutas[ruta2Index].clientesVisitados.empty());
+
+    Ruta& ruta1 = rutas[ruta1Index];
+    Ruta& ruta2 = rutas[ruta2Index];
+
+    // Elegir dos clientes aleatoriamente de las rutas seleccionadas
+    uniform_int_distribution<> distCliente1(0, ruta1.clientesVisitados.size() - 1);
+    uniform_int_distribution<> distCliente2(0, ruta2.clientesVisitados.size() - 1);
+    int cliente1Index = distCliente1(gen);
+    int cliente2Index = distCliente2(gen);
+
+    // Obtener los índices de los clientes en el vector original
+    int cliente1Id = ruta1.clientesVisitados[cliente1Index] - 1; // Índice 0-indexado
+    int cliente2Id = ruta2.clientesVisitados[cliente2Index] - 1; // Índice 0-indexado
+
+    // Verificar si el movimiento está en la lista tabú
+    string tabuKey = to_string(cliente1Id) + "_" + to_string(cliente2Id);
+    if (tabuList.find(tabuKey) != tabuList.end()) {
+        return false; // Movimiento tabú, no se realiza
+    }
+
+    // Intercambiar los clientes en las rutas
+    swap(ruta1.clientesVisitados[cliente1Index], ruta2.clientesVisitados[cliente2Index]);
+
+    // Verificar restricciones después del intercambio (capacidad y distancia)
+    bool restriccionesCumplidas = true;
+    for (int i = 0; i < 2; ++i) { // Iterar sobre las rutas seleccionadas
+        int rutaIndex = (i == 0) ? ruta1Index : ruta2Index; // Índice de la ruta actual
+        Ruta& ruta = rutas[rutaIndex]; // Obtener la ruta por referencia
+
+        int depositoActual = ruta.depositoId - 1;
+        ruta.cargaActual = 0;
+        ruta.distanciaRecorrida = 0;
+
+        for (int j = 0; j < ruta.clientesVisitados.size(); ++j) {
+            int cliente = ruta.clientesVisitados[j] - 1; // Índice 0-indexado
+            ruta.cargaActual += clientes[cliente].demanda;
+
+            // Calcular distancia desde el depósito o el cliente anterior
+            double distancia = (j == 0) ?
+                calcularDistancia(depositos[depositoActual].x, depositos[depositoActual].y, clientes[cliente].x, clientes[cliente].y) :
+                calcularDistancia(clientes[ruta.clientesVisitados[j - 1] - 1].x, clientes[ruta.clientesVisitados[j - 1] - 1].y, clientes[cliente].x, clientes[cliente].y);
+            ruta.distanciaRecorrida += distancia;
+
+            // Verificar restricciones
+            if (ruta.cargaActual > depositos[depositoActual].capacidadMaxima ||
+                (depositos[depositoActual].distanciaMaxima > 0 && ruta.distanciaRecorrida > depositos[depositoActual].distanciaMaxima)) {
+                restriccionesCumplidas = false;
+                break;
+            }
+        }
+
+        // Agregar distancia de regreso al depósito
+        if (!ruta.clientesVisitados.empty()) {
+            int ultimoCliente = ruta.clientesVisitados.back() - 1;
+            ruta.distanciaRecorrida += calcularDistancia(clientes[ultimoCliente].x, clientes[ultimoCliente].y, depositos[depositoActual].x, depositos[depositoActual].y);
+        }
+
+        if (!restriccionesCumplidas) {
+            break; // Si alguna ruta no cumple las restricciones, deshacer el swap
+        }
+    }
+
+    // Deshacer el swap si las restricciones no se cumplen
+    if (!restriccionesCumplidas) {
+        swap(ruta1.clientesVisitados[cliente1Index], ruta2.clientesVisitados[cliente2Index]);
+        return false;
+    }
+
+    // Agregar el movimiento a la lista tabú
+    tabuList.insert(tabuKey);
+    return true; // Swap realizado con éxito
+}
+
+
+// Función para evaluar una solución (distancia total)
+double evaluarSolucion(const vector<Ruta>& rutas) {
+    double distanciaTotal = 0;
+    for (const Ruta& ruta : rutas) {
+        distanciaTotal += ruta.distanciaRecorrida;
+    }
+    return distanciaTotal;
+}
+
+// Función para realizar la búsqueda Tabú
+vector<Ruta> tabuSearch(vector<Ruta> rutas, vector<Cliente>& clientes, const vector<Deposito>& depositos, mt19937& gen, int tabuTenure, int maxIteraciones) {
+    unordered_set<string> tabuList;
+    double mejorDistancia = evaluarSolucion(rutas);
+    vector<Ruta> mejorSolucion = rutas;
+    int iteracion = 0;
+    int iteracionSinMejora = 0;
+    const int maxIteracionesSinMejora = 10; // Criterio de parada por estancamiento
+
+    while (iteracion < maxIteraciones && iteracionSinMejora < maxIteracionesSinMejora) {
+        bool swapRealizado = realizarSwap(rutas, clientes, depositos, gen, tabuList);
+
+        cout << swapRealizado << endl;
+
+        if (swapRealizado) {
+            double nuevaDistancia = evaluarSolucion(rutas);
+
+            // Criterio de aspiración (opcional): aceptar el movimiento incluso si es tabú si mejora la mejor solución
+            if (nuevaDistancia < mejorDistancia) { 
+                mejorDistancia = nuevaDistancia;
+                mejorSolucion = rutas;
+                tabuList.clear(); // Vaciar la lista tabú si se encuentra una mejor solución
+                iteracionSinMejora = 0; // Reiniciar el contador de estancamiento
+            } else {
+                iteracionSinMejora++;
+            }
+        } else {
+            iteracionSinMejora++;
+        }
+
+        // Actualizar la lista tabú
+        if (tabuList.size() >= tabuTenure) {
+            tabuList.erase(tabuList.begin());
+        }
+
+        iteracion++;
+    }
+
+    return mejorSolucion;
 }
 
 
@@ -325,16 +460,19 @@ int main() {
 
     int numSwaps = elements.clientes.size()/2;
     for(int i = 0; i < numSwaps; i++) {
-        elements.clientes = swapClientes(elements.clientes, gen);
+        elements.clientes = clientsSwap(elements.clientes, gen);
     }
 
     vector<Ruta> rutas(elements.M * elements.T);
-    rutas = Greedy(elements.M, elements.N, elements.T, elements.depositos, elements.clientes);
+    rutas = greedy(elements.M, elements.N, elements.T, elements.depositos, elements.clientes);
 
     int tabuListSize = getSizeTL(rutas);
     cout << "Largo lista tabu: " << tabuListSize << endl;
 
-    //printResults(rutas, elements);
+    // Aplicar búsqueda tabú y obtener la mejor solución
+    vector<Ruta> mejorSolucion = tabuSearch(rutas, elements.clientes, elements.depositos, gen, tabuListSize, 1000); 
+
+    printResults(mejorSolucion, elements);
     //saveResults(rutas, elements);
     return 0;
 };
