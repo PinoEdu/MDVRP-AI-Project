@@ -4,3 +4,6 @@ Project:
 run:
 	make
 	./program.out
+
+clean:
+	rm -f *.out

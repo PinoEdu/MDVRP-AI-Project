@@ -21,3 +21,9 @@ Para compilar el código, simplemente ejecute el siguiente comando en la raíz d
 Para compilar y ejecutar el código, utilice el siguiente comando:
 
     make run
+
+## Eliminar archivos
+
+Para eliminar los archivos compilados y/o generados, utilice el siguiente comando:
+
+    make clean
